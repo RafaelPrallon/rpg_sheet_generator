@@ -1,0 +1,5 @@
+attribute,value_distribution,valid_values,point_cost
+dexterity,value_list,d6-1,d8-1,d10-2,0
+insight,value_list,d6-1,d8-1,d10-2,0
+might,value_list,d6-1,d8-1,d10-2,0
+willpower,value_list,d6-1,d8-1,d10-2,0

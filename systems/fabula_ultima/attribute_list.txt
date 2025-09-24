@@ -1,0 +1,8 @@
+character_name
+attributes
+title
+theme
+origin
+classes
+bonds
+equipment
