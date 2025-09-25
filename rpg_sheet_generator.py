@@ -11,12 +11,29 @@ def add_attr(system_folder, attribute):
     return input(f"Please type your character's {attribute}: ")
 
 def set_att(stat_list):
-  print("Now you will set the following characteristics")
+  attributes = {}
+  print("Now you will set the following characteristics:")
+  distribution_method = stat_list[1]['value_distribution']
+  point_cost = stat_list[1]['point_cost']
+  valid_values = dict(val.split('-') for val in stat_list[1]['valid_values'].split(';'))
+  
   for stat in stat_list:
     print(f"-{stat['attribute'].replace("_", " ").capitalize()}")
-  
-
+  if distribution_method == 'value_list':
+    print(f'You can select one of the following values for each attribute:')
+    for key in valid_values.keys():
+      valid_values[key] = int(valid_values[key])
+      print(f'{key} that can be used {valid_values[key]} times.')
+    for stat in stat_list:
+      selected_val = ''
+      while selected_val not in valid_values.keys() or (valid_values.get(selected_val,0) == 0):
+        selected_val = input(f'Please type the desired value for {stat['attribute'].replace("_", " ").capitalize()}: ')
+      attributes[stat['attribute']] = selected_val
+      valid_values[selected_val] = valid_values[selected_val] - 1
+  return attributes
     
+
+      
 def open_file(attr,file,attr_name):
   if isinstance(attr,list):
     try:
@@ -31,9 +48,7 @@ def open_file(attr,file,attr_name):
   elif isinstance(attr,dict):
     try:
       with open(file, 'r') as f:
-        attr = csv.DictReader(f)
-        for row in attr:
-          print(row)
+        attr = list(csv.DictReader(f))
     except Exception as e:
       print(e)
       print(f"Rules file not found. Please add a {attr_name} file and try again")
