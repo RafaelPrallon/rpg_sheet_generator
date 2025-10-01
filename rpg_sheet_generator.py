@@ -1,12 +1,15 @@
 from menus import Menu
-import os, csv
+import os, csv, re
 
 def add_attr(system_folder, attribute):
   if os.path.isfile(os.path.join(system_folder, f"{attribute}.csv")):
     stat_list = open_file({},os.path.join(system_folder,f"{attribute}.csv"),attribute)
     return set_att(stat_list)
   elif os.path.isdir(os.path.join(system_folder, attribute)):
-    print("implementing")
+    if attribute == 'classes':
+      return select_classes(os.path.join(system_folder, 'classes'), rules[0])
+    else:
+      return select_option(os.path.join(system_folder, attribute))
   else:
     return input(f"Please type your character's {attribute}: ")
 
@@ -31,10 +34,64 @@ def set_att(stat_list):
       attributes[stat['attribute']] = selected_val
       valid_values[selected_val] = valid_values[selected_val] - 1
   return attributes
-    
+
+def select_option(file_path, attr):
+  option_list_path = os.path.join(file_path, 'list.txt')
+  option_list = open_file([], option_list_path)
+  print(f'Here is the list of available {attr}:')
+
+  selected_option_index = Menu.number_menu_input(f"Please select the desired {attr} by typing it's correspondent number: ", system_list)
+
+  selected_option = option_list[selected_option_index - 1]
+  return selected_option
+
+def select_classes(file_path, rules):
+  starter_level = int(rules['starter_level'])
+  class_list_path = os.path.join(file_path, 'list.txt')
+  class_list = open_file([], class_list_path,'list')
+  class_levels = {}
+  for level in range(1, starter_level+1):
+    selected_class_index = Menu.number_menu_input(f"Please select the desired class for level {level} by typing it's correspondent number: ", class_list)
+    selected_class = class_list[selected_class_index - 1]
+    if selected_class in class_levels:
+      class_levels[selected_class] += 1
+    else:
+      class_levels[selected_class] = 1
+    print(f'current levels: {class_levels}')
+  return class_levels
+
+def calc_bonus_att(file_path, character_classes):
+  bonus_attr = {}
+  for char_class in character_classes.keys():
+    class_attr = open_file({}, os.path.join(file_path, f'{char_class}.csv'),'class attributes')[0]
+    bonus_attr[class_attr['attr_name']] = bonus_attr.get(class_attr['attr_name'], 0) + int(class_attr['attr_bonus'])
+  return bonus_attr
+
+
+def calc_hp(rules, attributes):
+  cal_formula = rules['health_calc']
+  if attributes.get('stats'):
+    pattern = r'\b(?:' + '|'.join(re.escape(attr) for attr in attributes['stats'].keys()) + r')\b'
+    relevant_attribute = re.search(pattern, cal_formula).group(0)
+    base_hp = eval(cal_formula.replace(relevant_attribute, re.findall(r'\d+',attributes['stats'][relevant_attribute])[0]))
+  else:
+    base_hp = 0
+  bonus_hp = attributes.get('bonus_stats', {}).get('hp', 0)
+  return base_hp + bonus_hp + sum(attributes.get('classes', {}).values())
+
+def calc_mp(rules, attributes):
+  cal_formula = rules['mana_calc']
+  if attributes.get('stats'):
+    pattern = r'\b(?:' + '|'.join(re.escape(attr) for attr in attributes['stats'].keys()) + r')\b'
+    relevant_attribute = re.search(pattern, cal_formula).group(0)
+    base_mp = eval(cal_formula.replace(relevant_attribute, re.findall(r'\d+',attributes['stats'][relevant_attribute])[0]))
+  else:
+    base_mp = 0
+  bonus_mp = attributes.get('bonus_stats', {}).get('mp', 0)
+  return base_mp + bonus_mp + sum(attributes.get('classes', {}).values())
 
       
-def open_file(attr,file,attr_name):
+def open_file(attr,file,attr_name: None):
   if isinstance(attr,list):
     try:
       with open(file,'r') as f:
@@ -59,7 +116,6 @@ def open_file(attr,file,attr_name):
   return attr
 
 cur_folder = os.path.dirname(os.path.abspath(__file__))
-print(cur_folder)
 rpg_system_root_folder = os.path.join(cur_folder, 'systems')
 print(rpg_system_root_folder)
 print("Welcome to the Rpg Character sheet generator.")
@@ -85,7 +141,6 @@ character_attr = {}
 element_list = []
 for item in os.listdir(rpg_system_folder):
   element_list.append(item.split('.')[0])
-print(element_list)
 
 print('Now we need to set the following characteristics you need to check for your character.')
 select_option_index = 0
@@ -104,4 +159,11 @@ while select_option_index != "q" and select_option_index != "Q":
   attribute = attribute_list[int(select_option_index)-1]
 
   character_attr[attribute] = add_attr(rpg_system_folder, attribute)
+  if character_attr.get('classes'):
+    character_attr['bonus_stats'] = calc_bonus_att(os.path.join(rpg_system_folder, 'classes', 'attributes'), character_attr['classes'])
+    # character_attr['class_skills'] = set_class_skills(os.path.join(rpg_system_folder, 'classes', 'skills'), character_attr['classes'])
+
+  character_attr['hp'] = calc_hp(rules[0], character_attr)
+  if rules[0]['mana_calc']:
+    character_attr['mp'] = calc_mp(rules[0], character_attr)
 print('Thanks for using the Rpg Character sheet generator.')

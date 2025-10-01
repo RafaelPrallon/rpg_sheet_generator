@@ -1,8 +1,7 @@
 character_name
-attributes
+stats
 title
 theme
 origin
 classes
 bonds
-equipment
