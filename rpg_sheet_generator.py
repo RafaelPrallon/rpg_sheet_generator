@@ -7,17 +7,19 @@ def add_attr(system_folder, attribute):
     return set_att(stat_list)
   elif os.path.isdir(os.path.join(system_folder, attribute)):
     if attribute == 'classes':
-      return select_classes(os.path.join(system_folder, 'classes'), rules[0])
+      return select_classes(os.path.join(system_folder, 'classes'), rules)
     else:
       return select_option(os.path.join(system_folder, attribute))
   else:
     return input(f"Please type your character's {attribute}: ")
 
-def set_att(stat_list):
+def set_att(stat_list, rules):
   attributes = {}
   print("Now you will set the following characteristics:")
   distribution_method = stat_list[1]['value_distribution']
-  point_cost = stat_list[1]['point_cost']
+  if distribution_method == 'point_distribution':
+    point_cost = stat_list[1]['point_cost']
+
   valid_values = dict(val.split('-') for val in stat_list[1]['valid_values'].split(';'))
   
   for stat in stat_list:
@@ -63,7 +65,7 @@ def select_classes(file_path, rules):
 def calc_bonus_att(file_path, character_classes):
   bonus_attr = {}
   for char_class in character_classes.keys():
-    class_attr = open_file({}, os.path.join(file_path, f'{char_class}.csv'),'class attributes')[0]
+    class_attr = open_file({}, os.path.join(file_path, f'{char_class}.csv'),'class attributes')
     bonus_attr[class_attr['attr_name']] = bonus_attr.get(class_attr['attr_name'], 0) + int(class_attr['attr_bonus'])
   return bonus_attr
 
@@ -105,7 +107,7 @@ def open_file(attr,file,attr_name: None):
   elif isinstance(attr,dict):
     try:
       with open(file, 'r') as f:
-        attr = list(csv.DictReader(f))
+        attr = list(csv.DictReader(f))[0]
     except Exception as e:
       print(e)
       print(f"Rules file not found. Please add a {attr_name} file and try again")
@@ -114,6 +116,12 @@ def open_file(attr,file,attr_name: None):
     print("Variable type not supported")
     exit()
   return attr
+
+# def write_attr(attr):
+#   print(f'Name: {attr['name']}')
+#   print(f'HP: {attr['hp']}')
+#   for keys in attr.keys():
+
 
 cur_folder = os.path.dirname(os.path.abspath(__file__))
 rpg_system_root_folder = os.path.join(cur_folder, 'systems')
@@ -163,7 +171,7 @@ while select_option_index != "q" and select_option_index != "Q":
     character_attr['bonus_stats'] = calc_bonus_att(os.path.join(rpg_system_folder, 'classes', 'attributes'), character_attr['classes'])
     # character_attr['class_skills'] = set_class_skills(os.path.join(rpg_system_folder, 'classes', 'skills'), character_attr['classes'])
 
-  character_attr['hp'] = calc_hp(rules[0], character_attr)
-  if rules[0]['mana_calc']:
-    character_attr['mp'] = calc_mp(rules[0], character_attr)
+  character_attr['hp'] = calc_hp(rules, character_attr)
+  if rules['mana_calc']:
+    character_attr['mp'] = calc_mp(rules, character_attr)
 print('Thanks for using the Rpg Character sheet generator.')
